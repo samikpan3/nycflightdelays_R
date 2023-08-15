@@ -1,0 +1,155 @@
+---
+title: "Project 1 Code"
+author: "Samikshya"
+date: "2022-10-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(nycflights13)
+library(tidyverse)
+library(dbplyr)
+library(ggplot2)
+```
+We are interested only in flights from UA so 
+```{r}
+
+data <- flights  
+
+flights.UA <- flights  %>%
+  filter(carrier == "UA") %>%
+  filter(!is.na(dep_delay))
+  
+head(flights.UA, 10)
+
+
+```
+
+## Time of the day:  
+
+
+
+```{r}
+ggplot(data = flights.UA, aes(x = factor(hour), y = dep_delay))+
+  geom_boxplot( color = 'orange')+
+  xlab("hour")+
+  ylab("Departure Delay")+
+  ggtitle("Distribution of Departure Delay by hour")
+```
+
+
+```{r}
+ggplot(data = flights.UA, mapping = aes(x = hour, fill = mean(dep_delay))) +
+  geom_bar(color = 'blue') +
+  xlab("hour")+
+  ylab("count")+
+  ggtitle("Median delay based on hour")
+ 
+           
+```
+```
+
+We can see that there is a pattern emerging from the boxplot. There are more variations in the box plot (Figure above) after hour 16 (i.e 4:00pm).
+
+So, does this mean that we see more delay in the departures when it is afternoon till the .So we test: Is the difference in between departure delay between two groups (from morning hour 0 - hour 16) till afternoon to midnight (hour 16 - hour 23). 
+Since our distribution of data is skewed, with longer tails towards the right, we use median to test our hypothesis. 
+Null Hypothesis: 
+There is no difference in mean delay between any hours in the dataset. 
+Alternative: There is difference in mean departure delay based on time of hours. UA is not equal to UB. 
+
+So, we will conduct a two tail permutation test to test the hypothesis.
+
+Calculating the median of these two groups: 
+
+```{r}
+ggplot(data = flights.UA, aes(x = factor(hour), y = dep_delay))+
+  geom_boxplot( color = 'orange')+
+  xlab("hour")+
+  ylab("Departure Delay")+
+  ggtitle("Distribution of Departure Delay by hour")
+```
+
+```{r}
+
+```
+
+
+
+
+```{r}
+ggplot(data = flights.UA, aes(x = factor(hour), y = dep_delay))+
+  geom_boxplot( color = 'orange')+
+  xlab("hour")+
+  ylab("Departure Delay")+
+  ggtitle("Distribution of Departure Delay by hour")
+  
+  
+```
+
+```{r}
+
+```
+
+
+```{r}
+observed_hour.meandifference = mean(flights.UA$dep_delay[flights.UA$morning_afternoon == 1], na.rm = TRUE) - mean(flights.UA$dep_delay[flights.UA$afternoon_late == 1], na.rm = TRUE)
+```
+Observed median difference in hours for delay between morning, afternoon and is -13.39 minutes
+Permutation Testing: 
+The sample size for one of the group is 39024
+
+```{r}
+N <- 10^4 -1
+sample.size = nrow(flights.UA)
+Flighthour.size = nrow(flights.UA[flights.UA$morning_afternoon == 1,])
+Flighthour.size 
+result_hours.meandifference <- numeric(N)
+
+for (i in 1:N)
+{
+  index = sample(sample.size, size = Flighthour.size, replace = FALSE)
+  result_hours.meandifference[i] = mean(flights.UA$dep_delay[index]) - mean(flights.UA$dep_delay[-index],)
+}
+```
+
+
+```{r}
+ggplot(data=tibble(result_hours.meandifference), mapping = aes(x=result_hours.meandifference)) + 
+  geom_histogram(bins= 100 ) +
+  geom_vline(xintercept = observed_hour.meandifference, color = "red")+
+  xlab("Result of the mean difference oberved and calculated")+
+  ylab("count")+
+  ggtitle("Histogram of the permutation test with observed mean difference in hour")
+  
+```
+
+
+```{r}
+p.value.hour <- ((sum(result_hours.meandifference <= observed_hour.meandifference) + 1) / (N + 1))*2
+p.value.hour 
+```
+
+
+Conclusion: Reject the null. There is enough evidence that there is difference in the mean departure delay 
+
+## Question 2 
+
+Time of the Year 
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}

@@ -1,0 +1,351 @@
+---
+title: "Project 2"
+author: "Samikshya"
+date: "2022-11-24"
+output: html_document
+---
+
+```{r}
+#Importing required library: 
+
+library(nycflights13)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+```
+
+ United Airlines (carrier code UA). You will now be investigating gain per flight - that is, how much quicker the flight ended up being than planned. We can find the net gain by subtracting the arrival delay from the departure delay. Create a new variable to measure the net gain.
+
+## Preparing the dataset:
+We are interested in UA flights so filtering the data to include only UA flights. 
+
+```{r}
+glimpse(flights)
+
+```
+
+```{r}
+UA_flights <- flights %>%
+  filter(carrier == "UA") %>%   
+  filter(!is.na(dep_delay) & (!is.na(arr_delay))) # Removing all na varaiables for 2 variables used in calculation
+  
+head(UA_flights, 10)
+
+```
+
+#Creating new variable: 
+Net gain = arrival delay - departure delay. 
+Measuring how much quicker the flight ended up being than planned
+
+```{r}
+UA_flights <- UA_flights %>%
+  mutate(net_gain = dep_delay - arr_delay)
+
+
+head(UA_flights, 10)
+  
+```
+Question 1: 
+
+Measuring if average gain differ for those who departed late or not:
+For this, first creating a Boolean that measures if the flight departed late or not. 
+Create visualization to explore the distribution and later conducting hypothesis. 
+
+```{r}
+UA_flights <- UA_flights %>%
+  mutate(late =ifelse(dep_delay > 0, 1,0))%>% #assigning 1 if departure delay is greater than 0 min  
+  mutate(very_late = ifelse(dep_delay > 30,1,0)) #assigning 1 if departure delay > 30 \
+
+        
+```
+
+```{r}
+# Data Visualization for average net gain for flights that were delayed or not delayed .
+
+ggplot(data = UA_flights, aes(x = factor(late), y = net_gain))+
+  geom_boxplot(color = "blue")+
+  xlab("Departure late")+
+  ylab("Net gain")+
+  ggtitle("Distribution of Total gain per flight by departure delay")
+```
+  
+
+
+```{r}
+ggplot(data = UA_flights, aes(x = factor(very_late), y = net_gain))+
+  geom_boxplot( color = 'orange')+
+  xlab("Departed very late")+
+  ylab("Net gain")+
+  ggtitle("Distribution of Net gain based on departed delay of 30 mins or more")
+
+
+```
+From both boxplot, it is difficult to inferif flight departed late, regardless of whether they were late (departure delay is greater than 0), or late by 30 minutes, the distributions for net gain is not distinctly different. There net gain, therefore, seems to have no distinctions on whether there was deparutre delay in flight. 
+
+Using hypothesis test: 
+ HNull : The average net gain is same regardless of flight departure delay. 
+         meannetgain (for departure delay > 0) = meannetgain(for dep_day <0)
+ HAlternative: The average net gain is different if the flight was delay. 
+          meannetgain (for departure delay > 0) != meannetgain(for dep_day <0)
+          
+          
+### T TEST REFERENCE 
+
+```{r}
+
+
+```
+
+          
+```{r}
+# For when depature delay > 0 i.e using variable late: 
+
+mean_late = mean(UA_flights$net_gain[UA_flights$late == 1])
+mean_nolate =mean(UA_flights$net_gain[UA_flights$late == 0])
+
+
+```
+
+```{r}
+t.test_late <- t.test(net_gain ~ late, data = UA_flights)
+t.test_late
+```
+P value is really small so we can reject the null in favor of alternative. SO there is gap. 
+
+```{r}
+# For when depature delay > 0 i.e using variable late: 
+t.test_vlate <- t.test(net_gain ~ very_late, data = UA_flights)
+t.test_vlate
+
+```
+```{r}
+total_flights <- length(UA_flights$dest)
+total_flights
+```
+
+
+##b) 
+
+What are the five most common destination airports for United Airlines flights from New York City? 
+
+```{r}
+common_dest <- UA_flights
+common_dest <- common_dest %>% 
+  count(UA_flights$dest, name="number_flights_dest", sort = TRUE) %>%
+  #colnames(UA_flights)[1] <- “og come on” %>%
+  slice(1:5)  #5 most common destination 
+
+common_dest 
+
+
+```
+
+## From the table above, we can see that the 5 most common flight destination for UA is IAH, ORD, SFO, LAX AND DEN respectively.  
+
+```{r}
+ 
+common_dest <- setNames(common_dest, c("dest","count")) 
+common_dest
+
+```
+
+```{r}
+# glimpse(common_dest)
+ggplot(data = common_dest, aes(x = reorder(dest, -count), y = count))+ 
+  geom_col(width = 0.8, fill = ' blue')+
+  xlab("Top 5 destination ")+
+  ylab("Number of flights")+
+  ggtitle("Most popular destination from NYC: UA flights")
+```
+Describe the distribution and the average gain for each of these five airports.
+
+
+
+```{r} 
+# Creating dataframe for all 5 popular destinations: 
+
+flights_IAH <- UA_flights %>% 
+  filter(dest == "IAH") 
+
+flights_ORD <- UA_flights %>% 
+  filter(dest == "ORD") 
+
+flights_SFO <- UA_flights %>% 
+  filter(dest == "SFO") 
+
+flights_LAX <- UA_flights %>% 
+  filter(dest == "LAX") 
+
+flights_DEN <- UA_flights %>% 
+  filter(dest == "DEN")  
+
+```
+
+Plotting the box plot for each flights destination and the ner gain. They are not very informative
+```{r}
+
+
+ggplot(data = flights_IAH, aes(y = net_gain))+
+  geom_boxplot(color = "blue")+
+  xlab("Departure late")+
+  ylab("Net gain")+
+  ggtitle("Distribution of Total gain per flight by departure delay")
+
+ggplot(data = flights_ORD, aes(y = net_gain))+
+  geom_boxplot(color = "blue")
+```
+
+Calculating the confidence interval for the average gain: 
+
+```{r}
+IAH_ttest <- t.test(flights_IAH$net_gain, conf.level = .95)
+IAH_ttest
+ORD_ttest <- t.test(flights_ORD$net_gain, conf.level = .95)
+ORD_ttest
+SFO_ttest <- t.test(flights_SFO$net_gain, conf.level = .95)
+SFO_ttest
+LAX_ttest <- t.test(flights_LAX$net_gain, conf.level = .95)
+LAX_ttest
+DEN_ttest <- t.test(flights_DEN$net_gain, conf.level = .95)
+DEN_ttest
+
+
+```
+
+
+
+3) Another common measure of interest, in addition to total gain, is the gain relative to the duration of the flight. Calculate the gain per hour by dividing the total gain by the duration in hours of each flight. Does the average gain per hour differ for flights that departed late versus those that did not? What about for flights that departed more than 30 minutes late?
+
+```{r}
+#glimpse(UA_flights)
+```
+
+Creating a new variable called gain_hour to calculate the gain per hour. 
+```{r}
+UA_flights <- UA_flights %>%
+  mutate(hours_flight = air_time/60) %>% #Converting the air_time from minutes to hour
+  mutate(gain_hour = net_gain/hours_flight)
+
+
+head(UA_flights, 10)
+
+```
+
+Does the average gain per hour differ for flights that departed late versus those that did not? What about for flights that departed more than 30 minutes late?
+
+Visual: How goes gain per hour differ for flights that departed late: 
+
+
+```{r}
+ggplot(data = UA_flights, aes(x = factor(late), y = gain_hour))+
+  geom_boxplot(color = "blue")+
+  xlab("Flight delay")+
+  ylab("Net Gain per hour")+
+  ggtitle("Distribution of net gain per hour against flight delay")
+
+```
+Values for gain_hour seems to be concentrated near 0 and they are not widely dospered, The q1:q3, max min are all close. Outliers exists in both cases; and there seems to be more outliers in the negative gain hour. I.e areas where net gain is higher i.e arrival delay is higher than departure delay. 
+
+Conclusion: The distribution of gain hour does not seem to be highly affected by whether there was a departure delay or not. 
+
+FOR CASE WHERE DEPARTURE DELAY WAS GREATER THAN 30:
+
+```{r}
+ggplot(data = UA_flights, aes(x = factor(very_late), y = gain_hour))+
+  geom_boxplot(color = "orange")+
+  xlab("Flight delay")+
+  ylab("Net Gain per hour")+
+  ggtitle("Distribution of net gain per hour based on if the flight was late by 30 min")
+```
+Similar to the late case, even for flights that were delayed by more than 30 minutes, there are distinctand obserrvable differences in the distribution of the net gain per hour. The graph does appear to show that there are more outliers in cases where flight departure delay was less than 30 minutes, i.e where value of flight delay = 0. 
+
+Confirming the test through hypothesis test: 
+
+Hnull: There is no difference in net gain per hour regardless of whether there was a departure delay. 
+i.e mean of net gain per hour when departure delay < 0 is same as the mean of the net gain per hour when departure delay > 0 
+HAlternative: The mean of the net gain per hour is different based on whether there was a departure delay in flights. 
+Mean of net gain per hour when dep_delay = 0 <= != mean of net gain per hour when dep_delay = 1 
+
+Conducting the hypothesis test: 
+```{r}
+t.test(gain_hour~late,data=UA_flights, alternative = "two.sided") 
+```
+p value is close to zero, which means observing the mean difference  of 0.662 out of random if the null hypothesis is true is close to zero. So, we can reject the null and state that, we donot have enough statistical evidence to claim that there is departure delay has no impact on mean net gain per hour. 
+
+If the flight was delayed by more than 30 minutes: 
+
+```{r}
+ttest_verylate <- t.test(gain_hour~very_late,data=UA_flights, alternative = "two.sided") 
+ttest_verylate
+```
+Similar to previous conclusion, as the p value is really small, we can creject the null hypothesis. We donot have enough statistical evidence to conclude that the mean net gain per hour is same regarless of whether the flight was delayed by more than 30 minutes. 
+
+
+## Question 4: 
+
+Does the average gain per hour differ for longer flights versus shorter flights?
+
+
+longer flights: air_time: 
+```{r}
+#summary(UA_flights$air_time)
+summary(UA_flights$hours_flight) 
+```
+So from the range we can see that the lowest flight value is 0.383 hours, and the mean flight length is 3.53 hours. The longest flight is 11.58 and the 3rd quartile is at 5.2. So we can divide it into two groups at mean. 
+
+Flights less than 3.5 is short flight and flights > 3.5 are long flights and we can conduct a hypothesis test on if average gain per hour differ for longer flights vs. shorter flights. 
+
+Hnull : The mean of average gain per hour for shorter flights is same as the mean of average gain per hour for shorter flights. 
+Halternate : The mean of average gain per hour for shorter flights is not equal to the mean of average gain per hour for longer flights. 
+
+So to divide it into 
+
+
+```{r}
+# First creating variable: flight_length with 1 = longer flight (if hours_flight > 3.5, 0= short if hours_flight < 3.5 
+
+UA_flights <- UA_flights %>%
+  mutate(flight_length = ifelse(UA_flights$hours_flight > 3.5, 1, 0)) #ir_time/60)
+
+#glimpse(UA_flights)
+
+```
+
+
+```{r}
+UA_flights <- UA_flights  %>% 
+    mutate(
+    delay_type = ifelse(dep_delay > 30, "late by more than 30", "late less than 30"))
+```
+
+
+```{r}
+ggplot(data = UA_flights, aes(x = factor(flight_length), y= gain_hour))+ 
+  geom_boxplot(color = "blue")+
+  xlab("Flight length distribution")+
+  ylab("Net Gain per hour")+
+  ggtitle("Distribution of net gain per hour based on the flight length")
+
+```
+
+
+```{r}
+ggplot(data = UA_flights, aes(x = flight_length, y= gain_hour)) +
+  geom_point(color = "blue")+
+   xlab("Flight length distribution")+
+  ylab("Net Gain per hour")+
+  ggtitle("Distribution of net gain per hour based on the length of flights value 0 if flight length is < 3.5 and value 1 if flight > 3.5")
+  
+
+```
+```{r}
+ttest_flightlength <- t.test(gain_hour~flight_length,data=UA_flights, alternative = "two.sided")
+ttest_flightlength
+```
+p is really small so we can reject null in favor of alternative. 
+
+```{r}
+```
+
+
+```{r}
